@@ -21,6 +21,8 @@
 #include "odbc_statement.h"
 #include "odbc_cursor.h"
 
+#include <cassert>
+
 #define MAX_UTF8_BYTES 4
 
 // object keys for the result object
@@ -3653,11 +3655,16 @@ fetch_and_store
                   {
                     case SQL_C_BINARY:
                     {
-                      data_returned_length = (
-                        row[column_index].size + string_length_or_indicator <= buffer_size ?
-                        string_length_or_indicator :
-                        buffer_size - row[column_index].size
-                      );
+                      if ((string_length_or_indicator == SQL_NO_TOTAL) ||
+                          (string_length_or_indicator > buffer_size))
+                      {
+                        data_returned_length = buffer_size;
+                      }
+                      else
+                      {
+                        assert(string_length_or_indicator >= 0);
+                        data_returned_length = string_length_or_indicator;
+                      }
                       buffer_size =
                         string_length_or_indicator == SQL_NO_TOTAL ?
                         buffer_size * 2 :
